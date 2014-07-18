@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+ 
+<!-- begin script tag example -->
+
+<script src="lua.vm.js"></script>
+
+<script type="text/lua">
+--js.global.alert('hello from Lua script tag in HTML!') -- this is Lua!
+</script>
+
+
+    <textarea id="luaCode" width="800" height="200" style="width:800px;height:200px;">
+    </textarea>
+    <button onclick="runLua();">run lua</button>
+
+    <script type="text/javascript">
+window.luaCallback = {
+  'run':function() {
+    console.log('running')
+  },
+  'b':10
+}
+
+    function runLua() {
+      var code = document.getElementById('luaCode').value;
+      Lua.execute(code);
+    }
+    </script>
+  </body>
+</html>
+
