@@ -1,6 +1,6 @@
 
 function parseFunc(string) {
-    var m = string.match (/^([\sa-zA-Z0-9]+)\((.*)\)\s*$/)
+    var m = string.match (/^([\sa-zA-Z0-9]+)\(([\s\S]*)\)\s*$/)
     if(!m)
         throw "error: unable to parse as a function: " + string;
     funcName = m[1]
