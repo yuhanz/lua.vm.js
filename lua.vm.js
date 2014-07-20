@@ -5702,7 +5702,23 @@ function copyTempDouble(ptr) {
       return ((asm["setTempRet0"](x+y > 4294967295),(x+y)>>>0)|0);
     }
   var _strcoll=_strcmp;
+
+  function _run_lua_callback_func(funcString) {
+      result = parseFunc(funcString)
+      if(!result)
+        throw "failed to parse callback function"
+      var funcName = result[0];
+      var arguments = result[1];
+      var func = window.luaCallback[funcName];
+      if(!func)
+        throw "undefined function: " + funcName;
+      return func.apply(null, arguments);
+  }
+
   function _emscripten_run_script_string(ptr) {
+      var str = Pointer_stringify(ptr)
+      return _run_lua_callback_func(str)|0; 
+/*
       var s = eval(Pointer_stringify(ptr)) + '';
       var me = _emscripten_run_script_string;
       if (!me.bufferSize || me.bufferSize < s.length+1) {
@@ -5712,9 +5728,12 @@ function copyTempDouble(ptr) {
       }
       writeStringToMemory(s, me.buffer);
       return me.buffer;
+*/
     }
   function _emscripten_run_script_int(ptr) {
-      return eval(Pointer_stringify(ptr))|0;
+      var str = Pointer_stringify(ptr)
+      return _run_lua_callback_func(str)|0
+      //return eval(Pointer_stringify(ptr))|0;
     }
   function _strspn(pstr, pset) {
       var str = pstr, set, strcurr, setcurr;
@@ -6593,7 +6612,7 @@ run();
 var Lua = {
   // public
   init: function() {
-    Lua.execute("-- JS<-->Lua glue\n--\n-- Horribly hackish, this is not the right way to do it\n\njs.number = 1\njs.string = 2\njs.object = 3\njs.func = 4\n\njs.lua_table = {}\njs.lua_index = 1\n\njs.to_js = function(x)\n  if type(x) == 'number' then return tostring(x)\n  elseif type(x) == 'string' then return '\"' .. x .. '\"'\n  elseif type(x) == 'function' then\n    local lua_index = js.lua_index\n    js.lua_index = js.lua_index + 1\n    js.lua_table[lua_index] = x\n    return 'Lua.funcWrapper(' .. lua_index .. ')'\n  --elseif type(x) == 'table' then return 'Lua.wrappers[\n  else return '<{[Unsupported]}>' end\nend\n\njs.convert_args = function(args)\n  local js_args = ''\n  for i, v in ipairs(args) do\n    if i > 1 then js_args = js_args .. ',' end\n    js_args = js_args .. js.to_js(v)\n  end\n  return js_args\nend\n\njs.wrapper_index = 1\n\njs.wrapper = {}\n\njs.wrapper.__index = function(table, key)\n  if key == 'new' then\n    local ret = { what = 'Lua.wrappers[' .. table.index .. ']' }\n    setmetatable(ret, js.new.property)\n    return ret\n  end\n  return js.get('Lua.wrappers[' .. table.index .. '].' .. key, table)\nend\n\njs.wrapper.__newindex = function(table, key, v)\n  js.run('Lua.wrappers[' .. table.index .. '].'..key..\"=\"..js.to_js(v))\nend\n\njs.wrapper.__call = function(table, ...)\n  if rawget(table, 'parent') then\n    local suffix = js.convert_args({...})\n    if string.len(suffix) > 0 then suffix = ',' .. suffix end\n    return js.get('(tempFunc = Lua.wrappers[' .. table.index .. '], tempFunc).call(Lua.wrappers[' .. table.parent.index .. ']' .. suffix .. ')') -- tempFunc needed to work around js invalid call issue FIXME\n  else\n    return js.get('(tempFunc = Lua.wrappers[' .. table.index .. '], tempFunc)(' .. js.convert_args({...}) .. ')') -- tempFunc needed to work around js invalid call issue FIXME\n  end\nend\n\njs.wrapper.__gc = function(table)\n  js.run('delete Lua.reverseWrappers[Lua.wrappers['..table.index..']]')\n  js.run('delete Lua.wrappers['..table.index..']')\nend\n\nlocal wrapper_store = {}\nsetmetatable(wrapper_store, {__mode='v'})\n\njs.getWrapperStore = function() return wrapper_store end\njs.storeGet = function(idx) return wrapper_store[idx] end\n\njs.get = function(what, parent)\n  local ret = { index = js.wrapper_index, parent=false }\n  js.wrapper_index = js.wrapper_index + 1\n  local return_type = js.run(\"Lua.test('\" .. what .. \"', \"..(js.wrapper_index-1)..\")\")\n  if return_type < 0 then\n    return wrapper_store[-return_type]\n  elseif return_type == js.number then\n    return js.run('Lua.last')\n  elseif return_type == js.string then\n    return js.run_string('Lua.last')\n  elseif return_type == js.object or return_type == js.func then\n    js.run('Lua.wrappers[' .. ret.index .. '] = Lua.last')\n    ret.parent = parent\n    setmetatable(ret, js.wrapper)\n    wrapper_store[js.wrapper_index-1] = ret\n    return ret\n  else\n    return '!Unsupported!'\n  end\nend\n\njs.global = js.get('Lua.theGlobal')\n\njs.new = {}\nsetmetatable(js.new, js.new)\njs.new.__index = function(table, key)\n  local ret = { what = key }\n  setmetatable(ret, js.new.property)\n  return ret\nend\n\njs.new.property = {}\njs.new.property.__call = function(table, ...)\n  return js.get('new ' .. table.what .. '(' .. js.convert_args({...}) .. ')')\nend\n\n");
+    Lua.execute("js.callback = function(funcName, args)\n  if not args then\n   args = []\n  end\n  js.run(funcName..'('..table.concat(args, ',')..')')\nend");
 
     if (typeof window == 'object') {
       // Run script tags on page

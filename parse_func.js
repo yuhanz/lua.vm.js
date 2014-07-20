@@ -2,7 +2,7 @@
 function parseFunc(string) {
     var m = string.match (/^([\sa-zA-Z0-9]+)\((.*)\)\s*$/)
     if(!m)
-        throw "error: not a function: " + funcStr;
+        throw "error: unable to parse as a function: " + string;
     funcName = m[1]
     args = m[2]
 
@@ -33,17 +33,21 @@ function tokenize(str,i) {
             }
         }
         if(c!='"')
-          throw "error: unexpected end of string without closing quote" 
+          throw "error: unexpected end of string without closing quote"
+        end = i
+        ++i;
+        start = start+1
     } else if(c>='0' && c<='9'||c=='.') {
         while(i<str.length && c>='0' && c<='9'||c=='.')
             c = str[++i];
+        end = i
     } else {
         throw "error: unexpecte start of an argument"
     }
 
-    if(start == i)
+    if(start >= i)
         return null;
-    return [str.substring(start,i), i];
+    return [str.substring(start,end), i];
 }
 
 function seekComma(str,i) {
