@@ -6,11 +6,6 @@
 <script src="parse_func.js"></script>
 <script src="lua.vm.js"></script>
 
-<script type="text/lua">
---js.global.alert('hello from Lua script tag in HTML!') -- this is Lua!
-</script>
-
-
     <textarea id="luaCode" width="800" height="200" style="width:800px;height:200px;">
         js.run('run()');
         js.run('alert("food")');
@@ -31,6 +26,7 @@ window.luaCallback = {
   sum:function(a,b,c) {
     s = a+b+c;
     console.log('sum result: ' + s);
+    return s;
   },
     concat:function(a,b,c) {
     s = ''+a+b+c;

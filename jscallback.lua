@@ -2,9 +2,9 @@
 --
 js.callback = function(funcName, args)
   if not args then
-  	args = []
+  	args = {}
   end
-  js.run(funcName..'('..table.concat(args, ',')..')')
+  run(funcName..'('..table.concat(args, ',')..')')
 end
 
  
