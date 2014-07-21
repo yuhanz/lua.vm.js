@@ -118,7 +118,10 @@ else {
   throw 'Unknown runtime environment. Where are we?';
 }
 function globalEval(x) {
-  eval.call(null, x);
+  var errorMessage = "globalEval(...) has been disabled";
+  console.error(errorMessage);
+  throw errorMessage
+  //eval.call(null, x);
 }
 if (!Module['load'] == 'undefined' && Module['read']) {
   Module['load'] = function load(f) {
@@ -497,9 +500,17 @@ function ccall(ident, returnType, argTypes, args) {
 Module["ccall"] = ccall;
 // Returns the C function with a specified identifier (for C++, you need to do manual name mangling)
 function getCFunc(ident) {
+
   try {
     var func = Module['_' + ident]; // closure exported function
-    if (!func) func = eval('_' + ident); // explicit lookup
+    if (!func) {
+      if(!ident.match( /^[a-zA-Z_][a-zA-Z0-9_]*$/ )) {
+        var errorMessage = "getCFunc(...) received unexpected identifier: " + ident;
+        console.error(errorMessage);
+        throw errorMessage;
+      }
+      func = eval('_' + ident); // explicit lookup
+    }
   } catch(e) {
   }
   assert(func, 'Cannot call unknown function ' + ident + ' (perhaps LLVM optimizations or closure removed it?)');
