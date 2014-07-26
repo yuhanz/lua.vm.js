@@ -21,6 +21,7 @@ function tokenize(str,i) {
     if(i>=str.length)
         return null;
     var start = i;
+    var type = 'string'
 
     if(c== '"') {
         ++i;
@@ -41,13 +42,17 @@ function tokenize(str,i) {
         while(i<str.length && c>='0' && c<='9'||c=='.')
             c = str[++i];
         end = i
+        type = 'number'
     } else {
         throw "error: unexpecte start of an argument"
     }
 
     if(start >= i)
         return null;
-    return [str.substring(start,end), i];
+    var value = str.substring(start,end)
+    if(type == 'number')
+        value = parseFloat(value)
+    return [value, i];
 }
 
 function seekComma(str,i) {
